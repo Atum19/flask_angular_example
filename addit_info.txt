@@ -1,0 +1,27 @@
+angul-wordcount-pro
+
+https://angul-wordcount-pro.herokuapp.com/
+
+https://git.heroku.com/angul-wordcount-pro.git
+
+
+heroku create angul-wordcount-stage
+
+https://angul-wordcount-stage.herokuapp.com/
+
+https://git.heroku.com/angul-wordcount-stage.git
+
+
+git remote add pro git@heroku.com:angul-wordcount-pro.git
+git remote add stage git@heroku.com:angul-wordcount-stage.git
+
+
+heroku git:clone -a angul-wordcount-stage
+
+############################### set up git for heroku ##################################
+
+http://stackoverflow.com/questions/17626944/heroku-permission-denied-publickey-fatal-could-not-read-from-remote-reposito
+
+http://stackoverflow.com/questions/19677356/heroku-create-could-not-read-from-remote-repository
+
+########################################################################################

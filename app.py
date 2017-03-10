@@ -3,11 +3,12 @@ import requests
 import operator
 import re
 import nltk
-from flask import Flask, render_template, jsonify, json, request
+from flask import Flask, render_template, jsonify, request
 from stop_words import stops
 from collections import Counter
 from bs4 import BeautifulSoup
 from bson.objectid import ObjectId
+import json
 
 from rq import Queue
 from rq.job import Job
@@ -27,14 +28,12 @@ app = Flask(__name__)
 def count_and_save_words(url):
 
     errors = []
-    print('888888888888888888888888888888888888889999999999')
     try:
         r = requests.get(url)
     except:
         errors.append(
             "Unable to get URL. Please make sure it's valid and try again."
         )
-        print("error", errors)
         return {"error": errors}
 
     # text processing
@@ -43,14 +42,12 @@ def count_and_save_words(url):
     tokens = nltk.word_tokenize(raw)
     text = nltk.Text(tokens)
 
-    print('66666666666666666666666666666666666')
     # remove punctuation, count raw words
     nonPunct = re.compile('.*[A-Za-z].*')
     raw_words = [w.encode('utf-8') for w in text if nonPunct.match(w)]
     # raw_word_count = Counter(raw_words)
     raw_word_count = dict((k.decode('utf-8').replace('.', '_'), v)
                           for (k, v) in Counter(raw_words).most_common(10))
-                          # for (k, v) in Counter(raw_words).items())
 
     # stop words
     no_stop_words = [w for w in raw_words if w.lower() not in stops]
@@ -66,30 +63,12 @@ def count_and_save_words(url):
                 "result_no_stop_words": no_stop_words_count,
             }
         )
-        print('88888888888888888888888888888888888888')
-        # return result._id
-        print('**************>>>', result.inserted_id)
+
         return result.inserted_id
     except Exception as e:
         errors.append("Unable to add item to database ")
         print('-------------------- error: ', errors, e)
         return {"error": errors}
-
-
-# @app.route('/', methods=['GET', 'POST'])
-# def index():
-#     results = {}
-#     if request.method == "POST":
-#         # get url that the person has entered
-#         url = request.form['url']
-#         if 'http' not in url[:7]:
-#             url = 'https://' + url
-#         job = q.enqueue_call(
-#             func=count_and_save_words, args=(url,), result_ttl=5000
-#         )
-#         print('@@@@@@@@@@@@@ >>>', job.get_id())
-#
-#     return render_template('index.html', results=results)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -102,13 +81,15 @@ def get_counts():
     # get url
     data = json.loads(request.data.decode())
     url = data["url"]
-    if 'http://' not in url[:7]:
-        url = 'http://' + url
+    if 'http' not in url[:7]:
+        url = 'https://' + url
+
     # start job
     job = q.enqueue_call(
         func=count_and_save_words, args=(url,), result_ttl=5000
     )
     # return created job id
+    print('@@@@@@@@@@@@@ >>>', job.get_id())
     return job.get_id()
 
 
@@ -116,22 +97,16 @@ def get_counts():
 def get_results(job_key):
 
     job = Job.fetch(job_key, connection=conn)
-    # lst = []
 
-    # print('##########', dir(job))
-    print('########## 111', job._status)
-    print('########## 0000', job.get_status())
-    print('########## 222', job.is_started)
-    print('########## 333', job.is_finished)
+    # print('########## 111', job._status)
+    # print('########## 0000', job.get_status())
+    # print('########## 222', job.is_started)
+    # print('########## 333', job.is_finished)
     # print('########## 444', job.result())
 
     if job.is_finished:
 
-        # print('^^^^^^^^^^^^^^^^', dir(tml))
         result = db.data_count.find()[0]["result_no_stop_words"]
-        print("111111111111111111111", result)
-        for cursor in db.data_count.find():
-            print("============^^^^^^", cursor)
 
         db.data_count.drop()
         return jsonify(result)
